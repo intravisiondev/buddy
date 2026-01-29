@@ -55,7 +55,12 @@ func main() {
 	aiReportService := services.NewAIReportService(db, geminiService, activityQueryService, productivityService)
 	goalSuggestionService := services.NewGoalSuggestionService(db, geminiService, activityQueryService, productivityService)
 	roomAIService := services.NewRoomAIService(db, geminiService)
-	gameService := services.NewGameService(db, geminiService)
+	
+	// Initialize game services
+	gameTemplateService := services.NewGameTemplateService()
+	gamePackager := services.NewGamePackager("./uploads")
+	gameService := services.NewGameService(db, geminiService, gameTemplateService, gamePackager)
+	
 	smartPlanService := services.NewSmartPlanService(db, geminiService, studyPlanService, goalService)
 	
 	// Set room AI service (to avoid circular dependency)
@@ -75,7 +80,7 @@ func main() {
 	friendHandler := handlers.NewFriendHandler(friendService)
 	aiHandler := handlers.NewAIHandler(geminiService)
 	reportHandler := handlers.NewReportHandler(aiReportService)
-	gameHandler := handlers.NewGameHandler(gameService)
+	gameHandler := handlers.NewGameHandler(gameService, gameTemplateService)
 	smartPlanHandler := handlers.NewSmartPlanHandler(smartPlanService)
 
 	// Initialize Gin router
@@ -222,11 +227,16 @@ func main() {
 			protected.GET("/rooms/:id/ai/status", roomHandler.GetRoomAIStatus)
 		}
 
+		// Game Templates
+		protected.GET("/games/templates", gameHandler.GetTemplates)
+		protected.GET("/games/templates/:template_id", gameHandler.GetTemplate)
+
 		// Games
 		if gameService != nil {
 			protected.POST("/rooms/:id/games", gameHandler.GenerateGame)
 			protected.GET("/rooms/:id/games", gameHandler.GetRoomGames)
 			protected.GET("/games/:game_id", gameHandler.GetGame)
+			protected.GET("/games/:game_id/bundle", gameHandler.DownloadBundle)
 			protected.POST("/games/:game_id/play", gameHandler.PlayGame)
 			protected.GET("/games/:game_id/results", gameHandler.GetGameResults)
 		}

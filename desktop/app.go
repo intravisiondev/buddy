@@ -690,3 +690,45 @@ func (a *App) GenerateSmartStudyPlan(data map[string]interface{}) (interface{}, 
 func (a *App) CreateSmartStudyPlan(data map[string]interface{}) (interface{}, error) {
 	return a.backend.CreateSmartStudyPlan(data)
 }
+
+// ============= Games =============
+
+// GetGameTemplates returns all available game templates
+func (a *App) GetGameTemplates() (interface{}, error) {
+	return a.backend.GetGameTemplates()
+}
+
+// GetGameTemplate returns a specific game template
+func (a *App) GetGameTemplate(templateID string) (interface{}, error) {
+	return a.backend.GetGameTemplate(templateID)
+}
+
+// GenerateGame generates a new AI-powered game
+func (a *App) GenerateGame(roomID string, gameType, subject, difficulty string, questionCount int) (interface{}, error) {
+	return a.backend.GenerateGame(roomID, gameType, subject, difficulty, questionCount)
+}
+
+// GetRoomGames returns all games for a room
+func (a *App) GetRoomGames(roomID string) (interface{}, error) {
+	return a.backend.GetRoomGames(roomID)
+}
+
+// GetGame returns a specific game
+func (a *App) GetGame(gameID string) (interface{}, error) {
+	return a.backend.GetGame(gameID)
+}
+
+// DownloadGameBundle downloads a game bundle
+func (a *App) DownloadGameBundle(gameID string) (string, error) {
+	return a.backend.DownloadGameBundle(gameID)
+}
+
+// PlayGame submits game answers
+func (a *App) PlayGame(gameID string, answers []string, timeSpent int) (interface{}, error) {
+	return a.backend.PlayGame(gameID, answers, timeSpent)
+}
+
+// GetGameResults returns student's results for a game
+func (a *App) GetGameResults(gameID string) (interface{}, error) {
+	return a.backend.GetGameResults(gameID)
+}

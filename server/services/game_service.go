@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -17,15 +18,19 @@ import (
 
 // GameService handles educational game creation and playing
 type GameService struct {
-	db            *database.DB
-	geminiService *GeminiService
+	db              *database.DB
+	geminiService   *GeminiService
+	templateService *GameTemplateService
+	packagerService *GamePackager
 }
 
 // NewGameService creates a new game service
-func NewGameService(db *database.DB, geminiService *GeminiService) *GameService {
+func NewGameService(db *database.DB, geminiService *GeminiService, templateService *GameTemplateService, packager *GamePackager) *GameService {
 	return &GameService{
-		db:            db,
-		geminiService: geminiService,
+		db:              db,
+		geminiService:   geminiService,
+		templateService: templateService,
+		packagerService: packager,
 	}
 }
 
@@ -237,3 +242,131 @@ func (s *GameService) GetStudentGameResults(gameID, studentID string) ([]models.
 
 	return results, nil
 }
+
+// GetBundlePath returns the path to a game's bundle
+func (s *GameService) GetBundlePath(gameID string) string {
+	if s.packagerService != nil {
+		return s.packagerService.GetBundlePath(gameID)
+	}
+	return ""
+}
+
+// CreateGameWithTemplate creates a game using a specific template
+func (s *GameService) CreateGameWithTemplate(roomID, teacherID, templateID, subject, difficulty string, questionCount int) (*models.AIGame, error) {
+	if s.geminiService == nil {
+		return nil, errors.New("AI service not available")
+	}
+
+	if s.templateService == nil {
+		return nil, errors.New("template service not available")
+	}
+
+	// Validate template
+	template, err := s.templateService.GetTemplate(templateID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate question count
+	if err := s.templateService.ValidateQuestionCount(templateID, questionCount); err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	roomOID, err := primitive.ObjectIDFromHex(roomID)
+	if err != nil {
+		return nil, errors.New("invalid room ID")
+	}
+
+	teacherOID, err := primitive.ObjectIDFromHex(teacherID)
+	if err != nil {
+		return nil, errors.New("invalid teacher ID")
+	}
+
+	// Get room context for AI
+	var room models.Room
+	roomCollection := s.db.Collection("rooms")
+	err = roomCollection.FindOne(ctx, bson.M{"_id": roomOID}).Decode(&room)
+	
+	syllabusStr := ""
+	if err == nil && room.Syllabus != nil {
+		syllabusStr = room.Name + " Course\n"
+	}
+
+	// Generate content with AI
+	jsonResponse, err := s.geminiService.GenerateGameQuestions(templateID, subject, difficulty, questionCount, syllabusStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse AI response
+	cleanedResponse := strings.TrimSpace(jsonResponse)
+	cleanedResponse = strings.TrimPrefix(cleanedResponse, "```json")
+	cleanedResponse = strings.TrimPrefix(cleanedResponse, "```")
+	cleanedResponse = strings.TrimSuffix(cleanedResponse, "```")
+	cleanedResponse = strings.TrimSpace(cleanedResponse)
+
+	var aiResponse struct {
+		Questions []models.GameQuestion `json:"questions"`
+	}
+
+	if err := json.Unmarshal([]byte(cleanedResponse), &aiResponse); err != nil {
+		return nil, errors.New("failed to parse AI response: " + err.Error())
+	}
+
+	// Get default config and ruleset
+	config, _ := s.templateService.GetDefaultConfig(templateID)
+	ruleset, _ := s.templateService.GetDefaultRuleset(templateID, difficulty)
+
+	// Create game
+	game := &models.AIGame{
+		RoomID:      roomOID,
+		TeacherID:   teacherOID,
+		Title:       fmt.Sprintf("%s - %s", subject, template.Name),
+		Description: fmt.Sprintf("AI-generated %s game for %s", template.Name, subject),
+		Template:    templateID,
+		Version:     "1.0.0",
+		Subject:     subject,
+		Difficulty:  difficulty,
+		Questions:   aiResponse.Questions,
+		Config:      config,
+		Ruleset:     ruleset,
+		MaxPlayers:  1,
+		Matchmaking: false,
+		PlayCount:   0,
+		AvgScore:    0,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	// Insert into database
+	collection := s.db.Collection("ai_games")
+	result, err := collection.InsertOne(ctx, game)
+	if err != nil {
+		return nil, err
+	}
+
+	game.ID = result.InsertedID.(primitive.ObjectID)
+
+	// Generate and package bundle
+	if s.packagerService != nil {
+		bundle, err := s.packagerService.CreateBundle(game)
+		if err == nil {
+			// Update game with bundle info
+			game.BundlePath = bundle.Path
+			game.BundleHash = bundle.Hash
+			
+			collection.UpdateOne(ctx, bson.M{"_id": game.ID}, bson.M{
+				"$set": bson.M{
+					"bundle_path": bundle.Path,
+					"bundle_hash": bundle.Hash,
+				},
+			})
+		}
+	}
+
+	return game, nil
+}
+

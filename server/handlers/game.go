@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"buddy-server/services"
@@ -10,13 +11,15 @@ import (
 
 // GameHandler handles game-related endpoints
 type GameHandler struct {
-	gameService *services.GameService
+	gameService     *services.GameService
+	templateService *services.GameTemplateService
 }
 
 // NewGameHandler creates a new game handler
-func NewGameHandler(gameService *services.GameService) *GameHandler {
+func NewGameHandler(gameService *services.GameService, templateService *services.GameTemplateService) *GameHandler {
 	return &GameHandler{
-		gameService: gameService,
+		gameService:     gameService,
+		templateService: templateService,
 	}
 }
 
@@ -144,4 +147,47 @@ func (h *GameHandler) GetGameResults(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, results)
+}
+
+// GetTemplates returns all available game templates
+func (h *GameHandler) GetTemplates(c *gin.Context) {
+	if h.templateService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Template service not available"})
+		return
+	}
+
+	templates := h.templateService.GetTemplates()
+	c.JSON(http.StatusOK, templates)
+}
+
+// GetTemplate returns a specific template
+func (h *GameHandler) GetTemplate(c *gin.Context) {
+	templateID := c.Param("template_id")
+
+	if h.templateService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Template service not available"})
+		return
+	}
+
+	template, err := h.templateService.GetTemplate(templateID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, template)
+}
+
+// DownloadBundle serves the game bundle ZIP file
+func (h *GameHandler) DownloadBundle(c *gin.Context) {
+	gameID := c.Param("game_id")
+
+	if h.gameService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Game service not available"})
+		return
+	}
+
+	bundlePath := h.gameService.GetBundlePath(gameID)
+	
+	c.FileAttachment(bundlePath, fmt.Sprintf("game-%s.zip", gameID))
 }

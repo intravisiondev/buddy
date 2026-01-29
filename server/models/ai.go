@@ -84,25 +84,119 @@ type GameQuestion struct {
 	Points        int      `json:"points" bson:"points"`
 }
 
+// GameScenario represents a scenario for arcade/racing games
+type GameScenario struct {
+	ID            string `json:"id" bson:"id"`
+	Question      string `json:"question" bson:"question"`
+	Context       string `json:"context" bson:"context"`             // "Enemy approaching", "Obstacle ahead"
+	CorrectAction string `json:"correct_action" bson:"correct_action"` // "shoot", "jump", "left"
+	Difficulty    int    `json:"difficulty" bson:"difficulty"`
+}
+
+// PuzzleConfig represents configuration for puzzle games
+type PuzzleConfig struct {
+	Pieces      int               `json:"pieces" bson:"pieces"`
+	ImageURL    string            `json:"image_url" bson:"image_url"`
+	Questions   []QuestionUnlock  `json:"questions" bson:"questions"`
+}
+
+// QuestionUnlock represents a question that unlocks puzzle pieces
+type QuestionUnlock struct {
+	Question      string   `json:"question" bson:"question"`
+	Options       []string `json:"options,omitempty" bson:"options,omitempty"`
+	CorrectAnswer string   `json:"correct_answer" bson:"correct_answer"`
+	UnlockPieces  []int    `json:"unlock_pieces" bson:"unlock_pieces"` // Which pieces to unlock
+}
+
+// ColorScheme represents visual customization
+type ColorScheme struct {
+	Primary   string `json:"primary" bson:"primary"`
+	Secondary string `json:"secondary" bson:"secondary"`
+	Accent    string `json:"accent" bson:"accent"`
+	Background string `json:"background" bson:"background"`
+}
+
+// PhysicsSettings represents physics configuration for Phaser games
+type PhysicsSettings struct {
+	Gravity   float64 `json:"gravity" bson:"gravity"`
+	Friction  float64 `json:"friction" bson:"friction"`
+	Restitution float64 `json:"restitution" bson:"restitution"`
+}
+
+// AudioSettings represents audio configuration
+type AudioSettings struct {
+	MusicEnabled bool    `json:"music_enabled" bson:"music_enabled"`
+	SFXEnabled   bool    `json:"sfx_enabled" bson:"sfx_enabled"`
+	Volume       float64 `json:"volume" bson:"volume"`
+}
+
+// GameConfig represents template-specific configuration
+type GameConfig struct {
+	Theme   string          `json:"theme" bson:"theme"` // "space", "underwater", "forest"
+	Colors  ColorScheme     `json:"colors" bson:"colors"`
+	Physics PhysicsSettings `json:"physics,omitempty" bson:"physics,omitempty"`
+	Audio   AudioSettings   `json:"audio" bson:"audio"`
+}
+
+// PowerUp represents in-game power-ups
+type PowerUp struct {
+	Type        string `json:"type" bson:"type"` // "time_freeze", "hint", "skip"
+	Duration    int    `json:"duration" bson:"duration"`
+	Description string `json:"description" bson:"description"`
+}
+
+// GameRuleset represents scoring and gameplay rules
+type GameRuleset struct {
+	TimeLimit    int            `json:"time_limit" bson:"time_limit"`       // seconds (0 = unlimited)
+	LivesCount   int            `json:"lives_count" bson:"lives_count"`
+	PassingScore int            `json:"passing_score" bson:"passing_score"` // percentage
+	BonusPoints  map[string]int `json:"bonus_points,omitempty" bson:"bonus_points,omitempty"` // "speed_bonus", "streak_bonus"
+	Penalties    map[string]int `json:"penalties,omitempty" bson:"penalties,omitempty"`
+	PowerUps     []PowerUp      `json:"power_ups,omitempty" bson:"power_ups,omitempty"`
+}
+
 // AIGame represents an AI-generated educational game
 type AIGame struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
 	RoomID    primitive.ObjectID `json:"room_id" bson:"room_id"`
 	TeacherID primitive.ObjectID `json:"teacher_id" bson:"teacher_id"`
 
-	Title      string `json:"title" bson:"title"`
-	GameType   string `json:"game_type" bson:"game_type"`       // "quiz", "flashcards", "fill_blank", "matching"
-	Subject    string `json:"subject" bson:"subject"`
-	Difficulty string `json:"difficulty" bson:"difficulty"`     // "easy", "medium", "hard"
+	// Metadata
+	Title       string `json:"title" bson:"title"`
+	Description string `json:"description,omitempty" bson:"description,omitempty"`
+	Template    string `json:"template" bson:"template"` // "quiz", "arcade-shooter", "racing", etc.
+	Version     string `json:"version" bson:"version"`
+	Subject     string `json:"subject" bson:"subject"`
+	Difficulty  string `json:"difficulty" bson:"difficulty"` // "easy", "medium", "hard"
 
 	// Game content (AI-generated)
-	Questions []GameQuestion `json:"questions" bson:"questions"`
+	Questions []GameQuestion `json:"questions,omitempty" bson:"questions,omitempty"`
+	Scenarios []GameScenario `json:"scenarios,omitempty" bson:"scenarios,omitempty"` // For arcade/racing
+	Puzzles   []PuzzleConfig `json:"puzzles,omitempty" bson:"puzzles,omitempty"`     // For puzzle games
 
-	// Parameters
-	TimeLimit    int `json:"time_limit,omitempty" bson:"time_limit,omitempty"` // seconds per question
-	PassingScore int `json:"passing_score" bson:"passing_score"`               // percentage
+	// Configuration
+	Config  GameConfig  `json:"config" bson:"config"`
+	Ruleset GameRuleset `json:"ruleset" bson:"ruleset"`
+
+	// Multiplayer
+	MaxPlayers  int  `json:"max_players" bson:"max_players"`
+	Matchmaking bool `json:"matchmaking" bson:"matchmaking"`
+
+	// Distribution
+	BundlePath string `json:"bundle_path,omitempty" bson:"bundle_path,omitempty"`
+	BundleHash string `json:"bundle_hash,omitempty" bson:"bundle_hash,omitempty"`
+
+	// Stats
+	PlayCount int     `json:"play_count" bson:"play_count"`
+	AvgScore  float64 `json:"avg_score" bson:"avg_score"`
+
+	// Deprecated fields (kept for backward compatibility)
+	GameType  string `json:"game_type,omitempty" bson:"game_type,omitempty"` // Use Template instead
+	TimeLimit int    `json:"time_limit,omitempty" bson:"time_limit,omitempty"` // Use Ruleset.TimeLimit
+	PassingScore int `json:"passing_score,omitempty" bson:"passing_score,omitempty"` // Use Ruleset.PassingScore
 
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
 }
 
 // GameResult represents a student's game performance
