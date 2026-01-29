@@ -226,3 +226,14 @@ type GoalSuggestion struct {
 	AcceptedAt  *time.Time         `json:"accepted_at,omitempty" bson:"accepted_at,omitempty"`
 	CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
 }
+
+// GameSession represents a game play session for replay protection
+type GameSession struct {
+	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	GameID    primitive.ObjectID `json:"game_id" bson:"game_id"`
+	StudentID primitive.ObjectID `json:"student_id" bson:"student_id"`
+	Nonce     string             `json:"nonce" bson:"nonce"` // Unique per session
+	StartedAt time.Time          `json:"started_at" bson:"started_at"`
+	ExpiresAt time.Time          `json:"expires_at" bson:"expires_at"`
+	Completed bool               `json:"completed" bson:"completed"`
+}

@@ -17,6 +17,7 @@ type Service struct {
 	AIClient   *AIClientService
 	SmartPlan  *SmartPlanService
 	Game       *GameService
+	Analytics  *AnalyticsService
 }
 
 // NewService creates a new service with all API services
@@ -38,6 +39,7 @@ func NewService() *Service {
 		AIClient:   NewAIClientService(client),
 		SmartPlan:  NewSmartPlanService(client),
 		Game:       NewGameService(client),
+		Analytics:  NewAnalyticsService(client),
 	}
 }
 

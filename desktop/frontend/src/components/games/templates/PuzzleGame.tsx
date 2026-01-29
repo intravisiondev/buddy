@@ -16,13 +16,21 @@ type PuzzleGameProps = {
 type PuzzlePiece = {
   id: number;
   unlocked: boolean;
-  x: number;
-  y: number;
-  correctX: number;
+  currentX: number;  // Current position in grid
+  currentY: number;
+  correctX: number;  // Target correct position
   correctY: number;
 };
 
-function PuzzlePieceComponent({ piece, onClick }: { piece: PuzzlePiece; onClick: () => void }) {
+function PuzzlePieceComponent({ 
+  piece, 
+  onClick, 
+  onDrop 
+}: { 
+  piece: PuzzlePiece; 
+  onClick: () => void;
+  onDrop: (dragId: number, dropId: number) => void;
+}) {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'puzzle-piece',
     item: { id: piece.id },
@@ -30,15 +38,19 @@ function PuzzlePieceComponent({ piece, onClick }: { piece: PuzzlePiece; onClick:
       isDragging: monitor.isDragging(),
     }),
     canDrag: piece.unlocked,
-  }));
+  }), [piece.unlocked]);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'puzzle-piece',
-    drop: (item: { id: number }) => ({ targetId: piece.id }),
+    drop: (item: { id: number }) => {
+      onDrop(item.id, piece.id);
+    },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
-  }));
+  }), [piece.id]);
+
+  const isCorrectPosition = piece.currentX === piece.correctX && piece.currentY === piece.correctY;
 
   return (
     <div
@@ -48,16 +60,23 @@ function PuzzlePieceComponent({ piece, onClick }: { piece: PuzzlePiece; onClick:
         w-full h-full border-2 rounded-lg flex items-center justify-center
         transition-all cursor-pointer
         ${piece.unlocked
-          ? 'bg-primary/20 border-primary hover:scale-105'
+          ? isCorrectPosition
+            ? 'bg-success/20 border-success hover:scale-105'
+            : 'bg-primary/20 border-primary hover:scale-105'
           : 'bg-gray-300 border-gray-400 opacity-50'
         }
-        ${isDragging ? 'opacity-50' : ''}
-        ${isOver ? 'border-accent' : ''}
+        ${isDragging ? 'opacity-50 scale-110' : ''}
+        ${isOver ? 'border-accent border-4' : ''}
       `}
       style={{ opacity: isDragging ? 0.5 : 1 }}
     >
       {!piece.unlocked && <HelpCircle className="w-6 h-6 text-gray-500" />}
-      {piece.unlocked && <span className="text-2xl font-bold">{piece.id + 1}</span>}
+      {piece.unlocked && (
+        <div className="text-center">
+          <span className="text-2xl font-bold">{piece.id + 1}</span>
+          {isCorrectPosition && <Check className="w-4 h-4 text-success mx-auto" />}
+        </div>
+      )}
     </div>
   );
 }
@@ -82,14 +101,26 @@ function PuzzleGameInner({ questions, puzzleConfig, onScoreUpdate, onGameEnd }: 
       initialPieces.push({
         id: i,
         unlocked: i === 0, // First piece unlocked
-        x: col,
-        y: row,
+        currentX: col,
+        currentY: row,
         correctX: col,
         correctY: row,
       });
     }
 
-    setPieces(initialPieces);
+    // Shuffle pieces for challenge
+    const shuffled = [...initialPieces];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tempX = shuffled[i].currentX;
+      const tempY = shuffled[i].currentY;
+      shuffled[i].currentX = shuffled[j].currentX;
+      shuffled[i].currentY = shuffled[j].currentY;
+      shuffled[j].currentX = tempX;
+      shuffled[j].currentY = tempY;
+    }
+
+    setPieces(shuffled);
   }, []);
 
   const handlePieceClick = (pieceId: number) => {
@@ -97,6 +128,51 @@ function PuzzleGameInner({ questions, puzzleConfig, onScoreUpdate, onGameEnd }: 
     
     setSelectedPiece(pieceId);
     setShowQuestion(true);
+  };
+
+  const handleDrop = (dragId: number, dropId: number) => {
+    if (dragId === dropId) return;
+
+    setPieces((prev) => {
+      const newPieces = [...prev];
+      const dragPiece = newPieces.find(p => p.id === dragId);
+      const dropPiece = newPieces.find(p => p.id === dropId);
+
+      if (!dragPiece || !dropPiece) return prev;
+
+      // Swap positions
+      const tempX = dragPiece.currentX;
+      const tempY = dragPiece.currentY;
+      dragPiece.currentX = dropPiece.currentX;
+      dragPiece.currentY = dropPiece.currentY;
+      dropPiece.currentX = tempX;
+      dropPiece.currentY = tempY;
+
+      return newPieces;
+    });
+
+    // Check if puzzle is complete
+    setTimeout(() => checkPuzzleComplete(), 100);
+  };
+
+  const checkPuzzleComplete = () => {
+    const allCorrect = pieces.every(
+      (p) => p.unlocked && p.currentX === p.correctX && p.currentY === p.correctY
+    );
+
+    if (allCorrect) {
+      const totalTime = Math.floor((Date.now() - startTime) / 1000);
+      const completionBonus = 100;
+      const finalScore = score + completionBonus;
+      
+      onScoreUpdate(finalScore);
+      onGameEnd({
+        score: finalScore,
+        totalTime,
+        passed: true,
+        questionsAnswered: currentQuestion,
+      });
+    }
   };
 
   const handleAnswer = (answer: string) => {
@@ -121,18 +197,6 @@ function PuzzleGameInner({ questions, puzzleConfig, onScoreUpdate, onGameEnd }: 
     setCurrentQuestion((prev) => prev + 1);
     setShowQuestion(false);
     setSelectedPiece(null);
-
-    // Check if puzzle complete
-    const allUnlocked = pieces.every((p) => p.unlocked || p.id === selectedPiece);
-    if (allUnlocked) {
-      const totalTime = Math.floor((Date.now() - startTime) / 1000);
-      onGameEnd({
-        score: newScore,
-        totalTime,
-        passed: true,
-        questionsAnswered: currentQuestion + 1,
-      });
-    }
   };
 
   const unlockedCount = pieces.filter((p) => p.unlocked).length;
@@ -178,13 +242,19 @@ function PuzzleGameInner({ questions, puzzleConfig, onScoreUpdate, onGameEnd }: 
 
       {/* Puzzle Grid */}
       <div className="grid grid-cols-4 gap-2 aspect-square max-w-md mx-auto">
-        {pieces.map((piece) => (
-          <PuzzlePieceComponent
-            key={piece.id}
-            piece={piece}
-            onClick={() => handlePieceClick(piece.id)}
-          />
-        ))}
+        {pieces
+          .sort((a, b) => {
+            if (a.currentY !== b.currentY) return a.currentY - b.currentY;
+            return a.currentX - b.currentX;
+          })
+          .map((piece) => (
+            <PuzzlePieceComponent
+              key={piece.id}
+              piece={piece}
+              onClick={() => handlePieceClick(piece.id)}
+              onDrop={handleDrop}
+            />
+          ))}
       </div>
 
       {/* Question Modal */}

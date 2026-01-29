@@ -44,6 +44,8 @@ export function DownloadGameBundle(arg1:string):Promise<string>;
 
 export function ExplainTopic(arg1:string,arg2:string,arg3:string):Promise<any>;
 
+export function ExportAnalyticsCSV(arg1:string):Promise<void>;
+
 export function GenerateAssessmentQuestions(arg1:string,arg2:string,arg3:number):Promise<any>;
 
 export function GenerateDailyGoals():Promise<any>;
@@ -78,6 +80,8 @@ export function GetGame(arg1:string):Promise<any>;
 
 export function GetGameResults(arg1:string):Promise<any>;
 
+export function GetGameStats(arg1:string):Promise<any>;
+
 export function GetGameTemplate(arg1:string):Promise<any>;
 
 export function GetGameTemplates():Promise<any>;
@@ -111,6 +115,8 @@ export function GetResources(arg1:string,arg2:string,arg3:string):Promise<any>;
 export function GetRoom(arg1:string):Promise<any>;
 
 export function GetRoomAIStatus(arg1:string):Promise<Record<string, any>>;
+
+export function GetRoomAnalytics(arg1:string):Promise<any>;
 
 export function GetRoomGames(arg1:string):Promise<any>;
 

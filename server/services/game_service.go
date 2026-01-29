@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -249,6 +251,182 @@ func (s *GameService) GetBundlePath(gameID string) string {
 		return s.packagerService.GetBundlePath(gameID)
 	}
 	return ""
+}
+
+// StartGameSession creates a new game session with nonce for replay protection
+func (s *GameService) StartGameSession(gameID, studentID string) (*models.GameSession, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	gameOID, err := primitive.ObjectIDFromHex(gameID)
+	if err != nil {
+		return nil, errors.New("invalid game ID")
+	}
+
+	studentOID, err := primitive.ObjectIDFromHex(studentID)
+	if err != nil {
+		return nil, errors.New("invalid student ID")
+	}
+
+	// Generate nonce
+	nonce, err := generateNonce()
+	if err != nil {
+		return nil, err
+	}
+
+	session := &models.GameSession{
+		GameID:    gameOID,
+		StudentID: studentOID,
+		Nonce:     nonce,
+		StartedAt: time.Now(),
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+		Completed: false,
+	}
+
+	collection := s.db.Collection("game_sessions")
+	result, err := collection.InsertOne(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+
+	session.ID = result.InsertedID.(primitive.ObjectID)
+	return session, nil
+}
+
+// PlayGameWithSession plays a game with session validation
+func (s *GameService) PlayGameWithSession(gameID string, answers []string, timeSpent int, sessionNonce string) (*models.GameResult, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Validate session
+	sessionCollection := s.db.Collection("game_sessions")
+	var session models.GameSession
+	err := sessionCollection.FindOne(ctx, bson.M{
+		"nonce":      sessionNonce,
+		"completed":  false,
+		"expires_at": bson.M{"$gt": time.Now()},
+	}).Decode(&session)
+	if err != nil {
+		return nil, errors.New("invalid or expired session")
+	}
+
+	// Mark session as completed
+	_, err = sessionCollection.UpdateOne(ctx, bson.M{"_id": session.ID}, bson.M{
+		"$set": bson.M{"completed": true},
+	})
+	if err != nil {
+		return nil, errors.New("session already used")
+	}
+
+	// Get game
+	gameOID, _ := primitive.ObjectIDFromHex(gameID)
+	var game models.AIGame
+	gameCollection := s.db.Collection("ai_games")
+	if err := gameCollection.FindOne(ctx, bson.M{"_id": gameOID}).Decode(&game); err != nil {
+		return nil, errors.New("game not found")
+	}
+
+	// Server-authoritative scoring
+	correctAnswers := 0
+	for i, answer := range answers {
+		if i < len(game.Questions) && answer == game.Questions[i].CorrectAnswer {
+			correctAnswers++
+		}
+	}
+
+	score := 0
+	if len(game.Questions) > 0 {
+		score = int(float64(correctAnswers) / float64(len(game.Questions)) * 100)
+	}
+	
+	passingScore := game.Ruleset.PassingScore
+	if passingScore == 0 {
+		passingScore = 70
+	}
+	passed := score >= passingScore
+
+	// Validate time spent
+	minTime := len(game.Questions) * 5
+	maxTime := game.Ruleset.TimeLimit * len(game.Questions)
+	if maxTime == 0 {
+		maxTime = 3600
+	}
+	
+	if timeSpent < minTime {
+		return nil, errors.New("time spent too short")
+	}
+	if timeSpent > maxTime {
+		return nil, errors.New("time spent exceeds limit")
+	}
+
+	// Rate limiting
+	if err := s.checkRateLimit(session.StudentID.Hex(), gameID); err != nil {
+		return nil, err
+	}
+
+	// Save result
+	result := &models.GameResult{
+		GameID:         gameOID,
+		StudentID:      session.StudentID,
+		Score:          score,
+		CorrectAnswers: correctAnswers,
+		TotalQuestions: len(game.Questions),
+		TimeSpent:      timeSpent,
+		Passed:         passed,
+		CreatedAt:      time.Now(),
+	}
+
+	resultCollection := s.db.Collection("game_results")
+	insertResult, err := resultCollection.InsertOne(ctx, result)
+	if err != nil {
+		return nil, err
+	}
+
+	result.ID = insertResult.InsertedID.(primitive.ObjectID)
+
+	// Update game stats
+	gameCollection.UpdateOne(ctx, bson.M{"_id": gameOID}, bson.M{
+		"$inc": bson.M{"play_count": 1},
+		"$set": bson.M{"updated_at": time.Now()},
+	})
+
+	return result, nil
+}
+
+// checkRateLimit enforces rate limiting
+func (s *GameService) checkRateLimit(studentID, gameID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	studentOID, _ := primitive.ObjectIDFromHex(studentID)
+	gameOID, _ := primitive.ObjectIDFromHex(gameID)
+
+	oneHourAgo := time.Now().Add(-1 * time.Hour)
+	collection := s.db.Collection("game_results")
+	count, err := collection.CountDocuments(ctx, bson.M{
+		"student_id": studentOID,
+		"game_id":    gameOID,
+		"created_at": bson.M{"$gte": oneHourAgo},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if count >= 10 {
+		return errors.New("rate limit exceeded: max 10 submissions per hour")
+	}
+
+	return nil
+}
+
+// generateNonce generates a cryptographically secure nonce
+func generateNonce() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // CreateGameWithTemplate creates a game using a specific template

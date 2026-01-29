@@ -60,6 +60,8 @@ func main() {
 	gameTemplateService := services.NewGameTemplateService()
 	gamePackager := services.NewGamePackager("./uploads")
 	gameService := services.NewGameService(db, geminiService, gameTemplateService, gamePackager)
+	multiplayerService := services.NewMultiplayerService(db)
+	gameAnalyticsService := services.NewGameAnalyticsService(db)
 	
 	smartPlanService := services.NewSmartPlanService(db, geminiService, studyPlanService, goalService)
 	
@@ -81,6 +83,8 @@ func main() {
 	aiHandler := handlers.NewAIHandler(geminiService)
 	reportHandler := handlers.NewReportHandler(aiReportService)
 	gameHandler := handlers.NewGameHandler(gameService, gameTemplateService)
+	matchHandler := handlers.NewMatchHandler(multiplayerService)
+	analyticsHandler := handlers.NewAnalyticsHandler(gameAnalyticsService)
 	smartPlanHandler := handlers.NewSmartPlanHandler(smartPlanService)
 
 	// Initialize Gin router
@@ -233,13 +237,25 @@ func main() {
 
 		// Games
 		if gameService != nil {
-			protected.POST("/rooms/:id/games", gameHandler.GenerateGame)
-			protected.GET("/rooms/:id/games", gameHandler.GetRoomGames)
+			protected.POST("/rooms/:room_id/games", gameHandler.GenerateGame)
+			protected.GET("/rooms/:room_id/games", gameHandler.GetRoomGames)
 			protected.GET("/games/:game_id", gameHandler.GetGame)
 			protected.GET("/games/:game_id/bundle", gameHandler.DownloadBundle)
 			protected.POST("/games/:game_id/play", gameHandler.PlayGame)
 			protected.GET("/games/:game_id/results", gameHandler.GetGameResults)
 		}
+
+		// Multiplayer Matches
+		protected.POST("/rooms/:room_id/matches", matchHandler.CreateMatch)
+		protected.GET("/rooms/:room_id/matches", matchHandler.GetActiveMatches)
+		protected.GET("/matches/:match_id", matchHandler.GetMatch)
+		protected.POST("/matches/:match_id/join", matchHandler.JoinMatch)
+		protected.GET("/ws/match/:match_id", matchHandler.HandleWebSocket)
+
+		// Game Analytics
+		protected.GET("/games/:game_id/stats", analyticsHandler.GetGameStats)
+		protected.GET("/rooms/:room_id/analytics", analyticsHandler.GetRoomAnalytics)
+		protected.GET("/rooms/:room_id/analytics/export", analyticsHandler.ExportCSV)
 
 		// AI (if available)
 		if geminiService != nil {

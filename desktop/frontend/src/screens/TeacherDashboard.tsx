@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Users, BookOpen, TrendingUp, Award, Calendar, MessageCircle, FileText, Loader } from 'lucide-react';
+import { Users, BookOpen, TrendingUp, Award, Calendar, MessageCircle, FileText, Loader, Gamepad2 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import ProgressBar from '../components/ui/ProgressBar';
 import Avatar from '../components/ui/Avatar';
 import Button from '../components/ui/Button';
+import GameAnalyticsDashboard from '../components/analytics/GameAnalyticsDashboard';
 import { useApp } from '../contexts/AppContext';
 
 export default function TeacherDashboard() {
@@ -14,6 +15,7 @@ export default function TeacherDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [allAssignments, setAllAssignments] = useState<any[]>([]);
   const [roomMembers, setRoomMembers] = useState<{ [roomId: string]: any[] }>({});
+  const [selectedRoomForAnalytics, setSelectedRoomForAnalytics] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -343,6 +345,32 @@ export default function TeacherDashboard() {
           )}
         </div>
       </div>
+
+      {/* Game Analytics Section */}
+      {classrooms.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-light-text-primary dark:text-dark-text-primary flex items-center gap-2">
+              <Gamepad2 className="w-5 h-5" />
+              Game Analytics
+            </h2>
+            {classrooms.length > 1 && (
+              <select
+                className="px-3 py-2 border border-light-border dark:border-dark-border rounded-lg bg-light-bg dark:bg-dark-bg text-light-text-primary dark:text-dark-text-primary text-sm"
+                onChange={(e) => setSelectedRoomForAnalytics(e.target.value)}
+                value={selectedRoomForAnalytics || classrooms[0]?.id || ''}
+              >
+                {classrooms.map((room) => (
+                  <option key={room.id} value={room.id}>
+                    {room.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <GameAnalyticsDashboard roomID={selectedRoomForAnalytics || classrooms[0]?.id} />
+        </div>
+      )}
     </div>
   );
 }

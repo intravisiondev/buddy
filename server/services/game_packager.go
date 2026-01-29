@@ -3,6 +3,7 @@ package services
 import (
 	"archive/zip"
 	"buddy-server/models"
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -16,13 +17,21 @@ import (
 
 // GamePackager handles game bundle creation and distribution
 type GamePackager struct {
-	uploadDir string
+	uploadDir    string
+	bundleSecret string
 }
 
 // NewGamePackager creates a new game packager
 func NewGamePackager(uploadDir string) *GamePackager {
+	// Load secret from env, fallback to default (should be in .env)
+	secret := os.Getenv("BUNDLE_SECRET")
+	if secret == "" {
+		secret = "buddy-default-bundle-secret-change-in-production"
+	}
+	
 	return &GamePackager{
-		uploadDir: uploadDir,
+		uploadDir:    uploadDir,
+		bundleSecret: secret,
 	}
 }
 
@@ -32,6 +41,7 @@ type GameManifest struct {
 	Version     string   `json:"version"`
 	Template    string   `json:"template"`
 	Hash        string   `json:"hash"`
+	Signature   string   `json:"signature"`
 	Entrypoint  string   `json:"entrypoint"`
 	Permissions []string `json:"permissions"`
 	Resources   []string `json:"resources"`
@@ -97,7 +107,10 @@ func (p *GamePackager) CreateBundle(game *models.AIGame) (*GameBundle, error) {
 		return nil, fmt.Errorf("failed to calculate hash: %w", err)
 	}
 
-	// Load and update manifest with hash
+	// Calculate HMAC signature
+	signature := p.signBundle(zipPath)
+
+	// Load and update manifest with hash and signature
 	manifestPath := filepath.Join(gameDir, "manifest.json")
 	manifestData, err := os.ReadFile(manifestPath)
 	if err != nil {
@@ -109,6 +122,7 @@ func (p *GamePackager) CreateBundle(game *models.AIGame) (*GameBundle, error) {
 		return nil, fmt.Errorf("failed to parse manifest: %w", err)
 	}
 	manifest.Hash = hash
+	manifest.Signature = signature
 
 	// Save updated manifest
 	manifestData, _ = json.MarshalIndent(manifest, "", "  ")
@@ -176,12 +190,24 @@ func (p *GamePackager) generateGameFiles(game *models.AIGame, outputDir string) 
 
 // generateHTML creates the HTML file
 func (p *GamePackager) generateHTML(game *models.AIGame) string {
+	// Strict CSP policy
+	csp := "default-src 'self'; " +
+		"script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+		"style-src 'self' 'unsafe-inline'; " +
+		"img-src 'self' data: blob:; " +
+		"font-src 'self' data:; " +
+		"connect-src 'self' ws://localhost:8080 wss://localhost:8080 http://localhost:8080; " +
+		"frame-ancestors 'none'; " +
+		"base-uri 'self'; " +
+		"form-action 'none'; " +
+		"object-src 'none';"
+
 	return fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src ws://localhost:8080 http://localhost:8080">
+    <meta http-equiv="Content-Security-Policy" content="%s">
     <title>%s</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -204,7 +230,7 @@ func (p *GamePackager) generateHTML(game *models.AIGame) string {
     </div>
     <script src="game.js"></script>
 </body>
-</html>`, game.Title, game.Title)
+</html>`, csp, game.Title, game.Title)
 }
 
 // generateGameScript creates the JavaScript file
@@ -678,6 +704,31 @@ func (p *GamePackager) BundleExists(gameID string) bool {
 	path := p.GetBundlePath(gameID)
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+// signBundle creates HMAC-SHA256 signature for a bundle
+func (p *GamePackager) signBundle(filePath string) string {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return ""
+	}
+	
+	h := hmac.New(sha256.New, []byte(p.bundleSecret))
+	h.Write(data)
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// VerifyBundle verifies bundle integrity
+func (p *GamePackager) VerifyBundle(filePath, expectedHash, expectedSignature string) bool {
+	// Verify hash
+	actualHash, err := p.calculateFileHash(filePath)
+	if err != nil || actualHash != expectedHash {
+		return false
+	}
+
+	// Verify signature
+	actualSignature := p.signBundle(filePath)
+	return hmac.Equal([]byte(actualSignature), []byte(expectedSignature))
 }
 
 // DeleteBundle removes a game bundle

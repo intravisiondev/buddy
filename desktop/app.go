@@ -732,3 +732,20 @@ func (a *App) PlayGame(gameID string, answers []string, timeSpent int) (interfac
 func (a *App) GetGameResults(gameID string) (interface{}, error) {
 	return a.backend.GetGameResults(gameID)
 }
+
+// ============= Analytics =============
+
+// GetRoomAnalytics returns analytics for a room's games
+func (a *App) GetRoomAnalytics(roomID string) (interface{}, error) {
+	return a.backend.GetRoomAnalytics(roomID)
+}
+
+// GetGameStats returns statistics for a specific game
+func (a *App) GetGameStats(gameID string) (interface{}, error) {
+	return a.backend.GetGameStats(gameID)
+}
+
+// ExportAnalyticsCSV exports analytics as CSV
+func (a *App) ExportAnalyticsCSV(roomID string) error {
+	return a.backend.ExportAnalyticsCSV(roomID)
+}

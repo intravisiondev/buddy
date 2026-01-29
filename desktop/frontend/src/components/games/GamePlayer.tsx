@@ -19,6 +19,16 @@ type GameState = {
   currentQuestion: number;
 };
 
+type GameMessage = 
+  | { type: 'GAME_SCORE'; score: number; lives: number; currentQuestion: number }
+  | { type: 'GAME_END'; score: number; totalTime: number; passed: boolean; questionsAnswered: number };
+
+const ALLOWED_ORIGINS = [
+  'file://',
+  'http://localhost:34115',
+  'http://localhost:8080',
+];
+
 export default function GamePlayer({ isOpen, onClose, game, onGameComplete }: GamePlayerProps) {
   const [loading, setLoading] = useState(true);
   const [bundlePath, setBundlePath] = useState<string | null>(null);
@@ -66,14 +76,56 @@ export default function GamePlayer({ isOpen, onClose, game, onGameComplete }: Ga
 
   const setupMessageListener = () => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'GAME_SCORE') {
-        setGameState({
-          score: event.data.score || 0,
-          lives: event.data.lives || 0,
-          currentQuestion: event.data.currentQuestion || 0,
-        });
-      } else if (event.data.type === 'GAME_END') {
-        handleGameEnd(event.data);
+      // 1. Origin validation
+      const isAllowedOrigin = ALLOWED_ORIGINS.some(origin => 
+        event.origin === origin || event.origin.startsWith(origin)
+      );
+      
+      if (!isAllowedOrigin && event.origin !== '') {
+        console.warn('[GamePlayer] Rejected message from unauthorized origin:', event.origin);
+        return;
+      }
+
+      // 2. Schema validation
+      const msg = event.data;
+      if (!msg || typeof msg !== 'object' || !msg.type) {
+        console.warn('[GamePlayer] Invalid message format:', msg);
+        return;
+      }
+
+      // 3. Type-specific validation
+      switch (msg.type) {
+        case 'GAME_SCORE':
+          if (typeof msg.score !== 'number' || typeof msg.lives !== 'number') {
+            console.warn('[GamePlayer] Invalid GAME_SCORE payload:', msg);
+            return;
+          }
+          if (msg.score < 0 || msg.lives < 0 || msg.lives > 10) {
+            console.warn('[GamePlayer] Suspicious GAME_SCORE values:', msg);
+            return;
+          }
+          setGameState({
+            score: msg.score,
+            lives: msg.lives,
+            currentQuestion: msg.currentQuestion || 0,
+          });
+          break;
+
+        case 'GAME_END':
+          if (typeof msg.score !== 'number' || typeof msg.totalTime !== 'number' || typeof msg.passed !== 'boolean') {
+            console.warn('[GamePlayer] Invalid GAME_END payload:', msg);
+            return;
+          }
+          if (msg.score < 0 || msg.totalTime < 0) {
+            console.warn('[GamePlayer] Suspicious GAME_END values:', msg);
+            return;
+          }
+          handleGameEnd(msg);
+          break;
+
+        default:
+          console.warn('[GamePlayer] Unknown message type:', msg.type);
+          return;
       }
     };
 
@@ -212,6 +264,7 @@ export default function GamePlayer({ isOpen, onClose, game, onGameComplete }: Ga
                 src={bundlePath}
                 className="w-full h-full border-none"
                 sandbox="allow-scripts allow-same-origin"
+                allow="accelerometer 'none'; camera 'none'; microphone 'none'; geolocation 'none'; payment 'none'"
                 title="Game Player"
               />
             ) : (

@@ -50,15 +50,25 @@ export default function RacingGame({ questions, config, ruleset, onScoreUpdate, 
     }
 
     function create(this: Phaser.Scene) {
-      // Create track
+      // Create track with physics
       const track = this.add.rectangle(400, 300, 400, 600, 0x555555);
+      this.physics.add.existing(track, true);
 
-      // Create player car
+      // Create player car with proper physics
       player = this.physics.add.sprite(400, 500, 'car');
       player.setCollideWorldBounds(true);
+      player.setMaxVelocity(300, 500);
+      player.setDrag(50);
+      player.body?.setSize(50, 80);
 
-      // Create opponents
-      opponents = this.physics.add.group();
+      // Create opponents with collision
+      opponents = this.physics.add.group({
+        defaultKey: 'opponent',
+        maxSize: 10,
+      });
+      
+      // Enable collision
+      this.physics.add.collider(player, opponents, handleCollision, undefined, this);
 
       // Distance display
       this.add.text(20, 20, 'Distance: 0m', {
@@ -85,7 +95,7 @@ export default function RacingGame({ questions, config, ruleset, onScoreUpdate, 
     }
 
     function update(this: Phaser.Scene, time: number, delta: number) {
-      // Move player car based on speed
+      // Apply speed to player movement (visual effect)
       if (speed > 0) {
         distance += speed * (delta / 1000);
         const distanceText: any = this.children.getByName('distanceText');
@@ -100,16 +110,40 @@ export default function RacingGame({ questions, config, ruleset, onScoreUpdate, 
         speedText.setText(`Speed: ${Math.floor(speed)} km/h`);
       }
 
-      // Decelerate
+      // Decelerate naturally
       if (speed > 0) {
-        speed -= 0.5;
+        speed = Math.max(0, speed - 0.5);
       }
 
-      // Move opponents
+      // Move opponents with physics
       opponents.children.entries.forEach((opp: any) => {
-        opp.y += 2;
-        if (opp.y > 650) opp.destroy();
+        if (opp.active) {
+          opp.setVelocityY(200 + speed * 0.5);
+          if (opp.y > 650) {
+            opp.destroy();
+          }
+        }
       });
+
+      // Lane switching
+      const cursors = this.input.keyboard?.createCursorKeys();
+      if (cursors?.left.isDown && player.x > 250) {
+        player.setVelocityX(-200);
+      } else if (cursors?.right.isDown && player.x < 550) {
+        player.setVelocityX(200);
+      } else {
+        player.setVelocityX(0);
+      }
+    }
+
+    function handleCollision(player: any, opponent: any) {
+      // Slow down on collision
+      speed = Math.max(0, speed - 30);
+      opponent.destroy();
+      
+      // Visual feedback
+      player.setTint(0xff0000);
+      setTimeout(() => player.clearTint(), 300);
     }
 
     function createQuestionUI(this: Phaser.Scene) {
@@ -145,11 +179,43 @@ export default function RacingGame({ questions, config, ruleset, onScoreUpdate, 
 
           btn.on('pointerdown', () => {
             const correct = opt === q.correct_answer;
+            
             if (correct) {
               speed += 50; // Speed boost
               score += q.points || 10;
+              
+              // Visual feedback
+              const boostText = this.add.text(400, 300, '⚡ SPEED BOOST!', {
+                fontSize: '32px',
+                color: '#10B981',
+              }).setOrigin(0.5);
+              
+              this.tweens.add({
+                targets: boostText,
+                alpha: 0,
+                scale: 1.5,
+                duration: 1000,
+                onComplete: () => boostText.destroy(),
+              });
+              
               onScoreUpdate(score);
+            } else {
+              speed = Math.max(0, speed - 20); // Penalty
+              
+              const penaltyText = this.add.text(400, 300, '✗ SLOW DOWN!', {
+                fontSize: '32px',
+                color: '#EF4444',
+              }).setOrigin(0.5);
+              
+              this.tweens.add({
+                targets: penaltyText,
+                alpha: 0,
+                y: 350,
+                duration: 1000,
+                onComplete: () => penaltyText.destroy(),
+              });
             }
+            
             currentQuestion++;
             createQuestionUI.call(this);
           });
@@ -172,7 +238,12 @@ export default function RacingGame({ questions, config, ruleset, onScoreUpdate, 
     function spawnOpponent(this: Phaser.Scene) {
       const lane = Phaser.Math.Between(0, 2);
       const x = 250 + lane * 150;
-      const opp = opponents.create(x, -80, 'opponent');
+      const opp = opponents.create(x, -80, 'opponent') as Phaser.Physics.Arcade.Sprite;
+      
+      if (opp) {
+        opp.setVelocityY(150);
+        opp.body?.setSize(50, 80);
+      }
     }
 
     function endGame(this: Phaser.Scene) {

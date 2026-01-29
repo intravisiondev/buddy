@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -35,11 +36,14 @@ type ActiveMatch struct {
 
 // PlayerConnection represents a player's WebSocket connection
 type PlayerConnection struct {
-	UserID    string
-	Conn      *websocket.Conn
-	Send      chan []byte
-	MatchID   string
-	service   *MultiplayerService
+	UserID         string
+	Conn           *websocket.Conn
+	Send           chan []byte
+	MatchID        string
+	service        *MultiplayerService
+	lastPing       time.Time
+	reconnectToken string
+	disconnected   bool
 }
 
 // Message represents a WebSocket message
@@ -59,8 +63,16 @@ func NewMultiplayerService(db *database.DB) *MultiplayerService {
 	}
 }
 
+// MatchConfig represents match configuration for API
+type MatchConfig struct {
+	Mode       string
+	MaxPlayers int
+	Private    bool
+	Duration   int
+}
+
 // CreateMatch creates a new match session
-func (s *MultiplayerService) CreateMatch(gameID, roomID, userID string, config models.MatchConfig) (*models.MatchSession, error) {
+func (s *MultiplayerService) CreateMatch(gameID, roomID, userID, userName, userAvatar string, config MatchConfig) (*models.MatchSession, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -80,12 +92,19 @@ func (s *MultiplayerService) CreateMatch(gameID, roomID, userID string, config m
 	}
 
 	// Create match session
+	matchConfig := models.MatchConfig{
+		Mode:       config.Mode,
+		MaxPlayers: config.MaxPlayers,
+		Private:    config.Private,
+		Duration:   config.Duration,
+	}
+
 	match := &models.MatchSession{
 		GameID:    gameOID,
 		RoomID:    roomOID,
 		Players:   []models.MatchPlayer{},
 		State:     "lobby",
-		Config:    config,
+		Config:    matchConfig,
 		Results:   nil,
 		StartedAt: time.Now(),
 	}
@@ -117,14 +136,14 @@ func (s *MultiplayerService) CreateMatch(gameID, roomID, userID string, config m
 	go s.runMatch(activeMatch)
 
 	// Auto-join creator
-	if err := s.JoinMatch(match.ID.Hex(), userID, "Creator", ""); err != nil {
+	if err := s.JoinMatch(match.ID.Hex(), userID, userName, userAvatar); err != nil {
 		log.Printf("Failed to auto-join creator: %v", err)
 	}
 
 	return match, nil
 }
 
-// JoinMatch adds a player to an existing match
+// JoinMatch adds a player to an existing match (idempotent)
 func (s *MultiplayerService) JoinMatch(matchID, userID, name, avatar string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -146,6 +165,13 @@ func (s *MultiplayerService) JoinMatch(matchID, userID, name, avatar string) err
 		return errors.New("match not found")
 	}
 
+	// Check if already joined (idempotent - return success)
+	for _, p := range match.Players {
+		if p.UserID == userOID {
+			return nil // Already joined, success
+		}
+	}
+
 	// Check if match is joinable
 	if match.State != "lobby" {
 		return errors.New("match already started")
@@ -153,13 +179,6 @@ func (s *MultiplayerService) JoinMatch(matchID, userID, name, avatar string) err
 
 	if len(match.Players) >= match.Config.MaxPlayers {
 		return errors.New("match is full")
-	}
-
-	// Check if already joined
-	for _, p := range match.Players {
-		if p.UserID == userOID {
-			return errors.New("already in match")
-		}
 	}
 
 	// Add player
@@ -209,13 +228,33 @@ func (s *MultiplayerService) HandleWebSocket(matchID, userID string, conn *webso
 		return errors.New("match not found")
 	}
 
-	// Create player connection
+	// Check if player already connected (reconnect scenario)
+	if existingPlayer, ok := activeMatch.Players[userID]; ok {
+		if existingPlayer.disconnected {
+			// Reconnect
+			existingPlayer.Conn = conn
+			existingPlayer.disconnected = false
+			existingPlayer.lastPing = time.Now()
+			
+			go existingPlayer.writePump()
+			go existingPlayer.readPump(activeMatch)
+			
+			// Send state sync
+			s.syncMatchState(activeMatch)
+			return nil
+		}
+	}
+
+	// Create new player connection
 	player := &PlayerConnection{
-		UserID:  userID,
-		Conn:    conn,
-		Send:    make(chan []byte, 256),
-		MatchID: matchID,
-		service: s,
+		UserID:         userID,
+		Conn:           conn,
+		Send:           make(chan []byte, 256),
+		MatchID:        matchID,
+		service:        s,
+		lastPing:       time.Now(),
+		reconnectToken: generateReconnectToken(),
+		disconnected:   false,
 	}
 
 	// Register player
@@ -226,6 +265,11 @@ func (s *MultiplayerService) HandleWebSocket(matchID, userID string, conn *webso
 	go player.readPump(activeMatch)
 
 	return nil
+}
+
+// generateReconnectToken creates a unique token for reconnection
+func generateReconnectToken() string {
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }
 
 // runMatch coordinates a match session
@@ -263,12 +307,20 @@ func (s *MultiplayerService) runMatch(match *ActiveMatch) {
 // readPump reads messages from WebSocket
 func (pc *PlayerConnection) readPump(match *ActiveMatch) {
 	defer func() {
-		match.Unregister <- pc
 		pc.Conn.Close()
+		
+		// Mark as disconnected, give grace period for reconnect
+		pc.disconnected = true
+		time.AfterFunc(30*time.Second, func() {
+			if pc.disconnected {
+				match.Unregister <- pc
+			}
+		})
 	}()
 
 	pc.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	pc.Conn.SetPongHandler(func(string) error {
+		pc.lastPing = time.Now()
 		pc.Conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
@@ -276,11 +328,15 @@ func (pc *PlayerConnection) readPump(match *ActiveMatch) {
 	for {
 		_, messageData, err := pc.Conn.ReadMessage()
 		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("WebSocket error: %v", err)
+			}
 			break
 		}
 
 		var msg Message
 		if err := json.Unmarshal(messageData, &msg); err != nil {
+			log.Printf("Failed to parse message: %v", err)
 			continue
 		}
 

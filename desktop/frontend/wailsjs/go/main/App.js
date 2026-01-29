@@ -86,6 +86,10 @@ export function ExplainTopic(arg1, arg2, arg3) {
   return window['go']['main']['App']['ExplainTopic'](arg1, arg2, arg3);
 }
 
+export function ExportAnalyticsCSV(arg1) {
+  return window['go']['main']['App']['ExportAnalyticsCSV'](arg1);
+}
+
 export function GenerateAssessmentQuestions(arg1, arg2, arg3) {
   return window['go']['main']['App']['GenerateAssessmentQuestions'](arg1, arg2, arg3);
 }
@@ -154,6 +158,10 @@ export function GetGameResults(arg1) {
   return window['go']['main']['App']['GetGameResults'](arg1);
 }
 
+export function GetGameStats(arg1) {
+  return window['go']['main']['App']['GetGameStats'](arg1);
+}
+
 export function GetGameTemplate(arg1) {
   return window['go']['main']['App']['GetGameTemplate'](arg1);
 }
@@ -220,6 +228,10 @@ export function GetRoom(arg1) {
 
 export function GetRoomAIStatus(arg1) {
   return window['go']['main']['App']['GetRoomAIStatus'](arg1);
+}
+
+export function GetRoomAnalytics(arg1) {
+  return window['go']['main']['App']['GetRoomAnalytics'](arg1);
 }
 
 export function GetRoomGames(arg1) {
