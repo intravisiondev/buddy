@@ -1,0 +1,25 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "Buddy",
+  "outputfilename": "Buddy",
+  "frontend": {
+    "dir": "./frontend",
+    "install": "npm install",
+    "build": "npm run build",
+    "dev:watcher": "npm run dev",
+    "dev:serverUrl": "http://localhost:5173"
+  },
+  "author": {
+    "name": "Buddy Team",
+    "email": "info@buddy.app"
+  },
+  "info": {
+    "productName": "Buddy",
+    "productVersion": "0.0.1",
+    "copyright": "Copyright © 2024, Buddy Team",
+    "comments": "AI-Powered Learning & Focus Assistant for Students"
+  },
+  "nsisType": "multiple",
+  "obfuscated": false,
+  "garbleargs": ""
+}

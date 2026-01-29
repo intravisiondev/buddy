@@ -1,0 +1,45 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+# Dependencies
+node_modules/
+
+# Build outputs
+desktop/build/
+desktop/bin/
+**/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go
+vendor/
+go.work
+
+# User uploads (server)
+server/uploads/
+
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+*.tmp
+*.tmp.*
+
+# Wails / frontend tooling
+desktop/frontend/node_modules/
+desktop/frontend/package-lock.json.md5

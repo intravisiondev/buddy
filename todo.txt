@@ -1,0 +1,43 @@
+Kullanıcı profili - kendi profilini düzenleme, settings +
+LEaderboard - Gamification : token, xp, gems, badges rule engine tanımlama. +
+Leaderboard'da Arkadaşın profilini görme, arkadaş ekleme +
+Room içinde bir kişinin profilini görme, arkadaş ekleme +
+
+Öğretmen
+Yeni room oluşturma - syllabus belirleme  +
+Ders kaynakları yükleme +
+Ödev ekleme  +
+Sınav tarihi belirleme +
+Syllabus olarak eklenen dersler, sınav tarihi ve ödevler Room'a katılan öğrenciler'in Study Plans'ına plan olarak eklenir. +
+    test edilsin +
+
+
+Veli geliştirmeleri +
+
+Öğrenci
+Ders için goal ekleme - AI ile eklenmelidir.
+Footer'a Time-tracking widget +
+
+AI Kullanım Önerileri
+
+
+
+- Buddy AI ile soru cevap +
+
+- Study Rooms'da hocanın yüklediği ders içerikleri ile eğitilmiş ve sadece ders için kısıtlanmış AI aracı ile ders hakkında sohbet etme +
+
+- AI ile Schedule ve Study Plan oluşturma +
+
+- Öğrenci time-tracking ile Plan, Milestone ya da Goal'den birini çalışma olarak seçebilir. Bu yaptığı çalışmayı tamamlayınca AI öğrencinin verimliliğini ve odaklanmasını ölçmesi için çalışma yaptığı konu ile alakalı soru sorar. Öğrenci de yaptığı çalışma ile alakalı odaklanma skorunu girer ve isterse not yazar.
+     Yeni yazı: Her Study Plan Activity'si tamamlandığında o çalışma ile alakalı AI sorular çıkarır. Bu sorular ile öğrencinin çalışma verimi ölçer ve AI ile Productivity Score hesaplar. Bu AI study Plan comments'leri db'de saklanır. Günlük Goal's ları çıkarırken bu comment's leri de kullanmalıdır. +
+
+- AI ile öğrenci için Goal önerileri oluşturma - Günlük +
+
+- Öğrenci ya da veli günlük, haftalık ya da aylık rapor olabilecektir. Öğrencinin tüm çalışma verileri AI model'e yüklenir ve critical thinking ile (belirli bir formatta) rapor üretmesi beklenir.
+
+- Öğretmen AI ile oyun oluşturma 
+
+
+Hatalar ve Eksikler:
+Leaderboard tablo yanlış gösteriyor. Yeni veriler gösterilmiyor +
+Milestones ilerlemeler olmuyor. +
