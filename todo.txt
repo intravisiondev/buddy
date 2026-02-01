@@ -33,7 +33,7 @@ AI Kullanım Önerileri
 
 - AI ile öğrenci için Goal önerileri oluşturma - Günlük +
 
-- Öğrenci ya da veli günlük, haftalık ya da aylık rapor olabilecektir. Öğrencinin tüm çalışma verileri AI model'e yüklenir ve critical thinking ile (belirli bir formatta) rapor üretmesi beklenir.
+- Öğrenci ya da veli günlük, haftalık ya da aylık rapor olabilecektir. Öğrencinin tüm çalışma verileri AI model'e yüklenir ve critical thinking ile (belirli bir formatta) rapor üretmesi beklenir. -
 
 - Öğretmen AI ile oyun oluşturma 
 

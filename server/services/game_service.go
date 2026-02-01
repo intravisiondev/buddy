@@ -79,12 +79,24 @@ func (s *GameService) GenerateGame(roomID, teacherID, gameType, subject, difficu
 	cleanedResponse = strings.TrimSuffix(cleanedResponse, "```")
 	cleanedResponse = strings.TrimSpace(cleanedResponse)
 
+	if cleanedResponse == "" {
+		return nil, errors.New("AI returned empty response; try fewer questions or check API key/limits")
+	}
+
 	var aiResponse struct {
 		Questions []models.GameQuestion `json:"questions"`
 	}
 
 	if err := json.Unmarshal([]byte(cleanedResponse), &aiResponse); err != nil {
-		return nil, errors.New("failed to parse AI response: " + err.Error())
+		snippetLen := 120
+		if len(cleanedResponse) < snippetLen {
+			snippetLen = len(cleanedResponse)
+		}
+		snippet := cleanedResponse
+		if len(cleanedResponse) > snippetLen {
+			snippet = "..." + cleanedResponse[len(cleanedResponse)-snippetLen:]
+		}
+		return nil, fmt.Errorf("failed to parse AI response: %v (response length: %d chars, end: %q)", err, len(cleanedResponse), snippet)
 	}
 
 	// Create game
@@ -251,6 +263,23 @@ func (s *GameService) GetBundlePath(gameID string) string {
 		return s.packagerService.GetBundlePath(gameID)
 	}
 	return ""
+}
+
+// EnsureBundle returns the bundle path, (re)creating the bundle so template/CSS updates apply to existing games
+func (s *GameService) EnsureBundle(gameID string) (bundlePath string, err error) {
+	game, err := s.GetGame(gameID)
+	if err != nil {
+		return "", err
+	}
+	if s.packagerService == nil {
+		return "", errors.New("game packager not available")
+	}
+	// Her istekte yeniden oluştur: böylece şablon/CSS güncellemeleri mevcut oyunlara yansır
+	bundle, err := s.packagerService.CreateBundle(game)
+	if err != nil {
+		return "", fmt.Errorf("failed to create bundle: %w", err)
+	}
+	return bundle.Path, nil
 }
 
 // StartGameSession creates a new game session with nonce for replay protection
@@ -486,12 +515,24 @@ func (s *GameService) CreateGameWithTemplate(roomID, teacherID, templateID, subj
 	cleanedResponse = strings.TrimSuffix(cleanedResponse, "```")
 	cleanedResponse = strings.TrimSpace(cleanedResponse)
 
+	if cleanedResponse == "" {
+		return nil, errors.New("AI returned empty response; try fewer questions or check API key/limits")
+	}
+
 	var aiResponse struct {
 		Questions []models.GameQuestion `json:"questions"`
 	}
 
 	if err := json.Unmarshal([]byte(cleanedResponse), &aiResponse); err != nil {
-		return nil, errors.New("failed to parse AI response: " + err.Error())
+		snippetLen := 120
+		if len(cleanedResponse) < snippetLen {
+			snippetLen = len(cleanedResponse)
+		}
+		snippet := cleanedResponse
+		if len(cleanedResponse) > snippetLen {
+			snippet = "..." + cleanedResponse[len(cleanedResponse)-snippetLen:]
+		}
+		return nil, fmt.Errorf("failed to parse AI response: %v (response length: %d chars, end: %q)", err, len(cleanedResponse), snippet)
 	}
 
 	// Get default config and ruleset

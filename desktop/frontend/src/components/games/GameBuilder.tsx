@@ -62,7 +62,8 @@ export default function GameBuilder({ isOpen, onClose, roomID, onGameCreated }: 
 
   const handleTemplateSelect = (template: GameTemplate) => {
     setSelectedTemplate(template);
-    setQuestionCount(Math.min(10, template.max_questions));
+    const maxQ = Math.max(3, template.max_questions || 10);
+    setQuestionCount(Math.min(10, maxQ));
     setStep(2);
   };
 
@@ -71,12 +72,13 @@ export default function GameBuilder({ isOpen, onClose, roomID, onGameCreated }: 
 
     setLoading(true);
     try {
+      const count = Math.max(3, Math.min(20, questionCount || 10));
       const game = await GenerateGame(
         roomID,
         selectedTemplate.id,
         subject,
         difficulty,
-        questionCount
+        count
       );
       console.log('Game generated:', game);
       if (onGameCreated) {

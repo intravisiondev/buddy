@@ -73,7 +73,7 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 	}
 
 	userID, _ := c.Get("user_id")
-	roomID := c.Param("room_id")
+	roomID := c.Param("id")
 
 	// Get user info for auto-join
 	userName, _ := c.Get("user_name")
@@ -131,7 +131,7 @@ func (h *MatchHandler) JoinMatch(c *gin.Context) {
 
 // GetActiveMatches returns active matches for a room
 func (h *MatchHandler) GetActiveMatches(c *gin.Context) {
-	roomID := c.Param("room_id")
+	roomID := c.Param("id")
 
 	matches, err := h.multiplayerService.GetActiveMatches(roomID)
 	if err != nil {

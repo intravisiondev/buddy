@@ -27,6 +27,7 @@ const ALLOWED_ORIGINS = [
   'file://',
   'http://localhost:34115',
   'http://localhost:8080',
+  'http://127.0.0.1:34116', // local game server (extracted bundle)
 ];
 
 export default function GamePlayer({ isOpen, onClose, game, onGameComplete }: GamePlayerProps) {
@@ -62,9 +63,9 @@ export default function GamePlayer({ isOpen, onClose, game, onGameComplete }: Ga
 
     setLoading(true);
     try {
-      // Download and extract game bundle
-      const path = await DownloadGameBundle(game.id);
-      setBundlePath(`file://${path}`);
+      // Download and extract game bundle; returns HTTP URL for iframe (file:// blocked in WebView)
+      const gameUrl = await DownloadGameBundle(game.id);
+      setBundlePath(gameUrl);
     } catch (err) {
       console.error('Failed to load game:', err);
       alert('Failed to load game');
@@ -156,9 +157,12 @@ export default function GamePlayer({ isOpen, onClose, game, onGameComplete }: Ga
   };
 
   const handleClose = () => {
-    if (gameEnded || confirm('Are you sure you want to quit? Progress will be lost.')) {
+    if (gameEnded) {
       onClose();
+      return;
     }
+    // Wails webview'da native confirm() güvenilir çalışmayabiliyor; doğrudan kapat
+    onClose();
   };
 
   return (

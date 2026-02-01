@@ -32,7 +32,8 @@ func NewGeminiService(apiKey string) (*GeminiService, error) {
 	model.SetTemperature(0.7)
 	model.SetTopP(0.95)
 	model.SetTopK(40)
-	model.SetMaxOutputTokens(2048)
+	// 8192 allows full JSON for game questions (10–20 items); 2048 was truncating
+	model.SetMaxOutputTokens(8192)
 
 	return &GeminiService{
 		client: client,

@@ -46,6 +46,14 @@ mongod --dbpath=/path/to/data
 
 Use your Atlas connection string in the server `.env` as `MONGO_URI`.
 
+If you get **DNS timeout** (`lookup _mongodb._tcp.... i/o timeout`), your network may block SRV lookups. Use the **Direct connection** string instead:
+
+1. In Atlas: Cluster → **Connect** → **Drivers** (or **Connect your application**).
+2. Choose **Go** and copy the connection string.
+3. Switch to **Direct connection** (or edit the string): it should look like  
+   `mongodb://user:pass@host1:27017,host2:27017,host3:27017/buddy?ssl=true&replicaSet=atlas-xxxxx-shard-0&authSource=admin`.
+4. Put that in `.env` as **`MONGO_URI_DIRECT`** (it overrides `MONGO_URI` when set), or replace `MONGO_URI` with it.
+
 ## 3. Backend server setup
 
 ```bash

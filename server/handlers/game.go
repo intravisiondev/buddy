@@ -25,10 +25,10 @@ func NewGameHandler(gameService *services.GameService, templateService *services
 
 // GenerateGameRequest represents a game generation request
 type GenerateGameRequest struct {
-	GameType      string `json:"game_type" binding:"required,oneof=quiz flashcards fill_blank matching"`
+	GameType      string `json:"game_type" binding:"required,oneof=quiz flashcards fill_blank fill-blank matching"`
 	Subject       string `json:"subject" binding:"required"`
 	Difficulty    string `json:"difficulty" binding:"required,oneof=easy medium hard"`
-	QuestionCount int    `json:"question_count" binding:"required,min=3,max=20"`
+	QuestionCount int    `json:"question_count" binding:"min=3,max=20"` // 0 = use default 10
 }
 
 // GenerateGame generates a new AI-powered game
@@ -47,13 +47,23 @@ func (h *GameHandler) GenerateGame(c *gin.Context) {
 		return
 	}
 
+	questionCount := req.QuestionCount
+	if questionCount < 3 || questionCount > 20 {
+		questionCount = 10
+	}
+
+	gameType := req.GameType
+	if gameType == "fill-blank" {
+		gameType = "fill_blank"
+	}
+
 	game, err := h.gameService.GenerateGame(
 		roomID,
 		userID.(string),
-		req.GameType,
+		gameType,
 		req.Subject,
 		req.Difficulty,
-		req.QuestionCount,
+		questionCount,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -178,7 +188,7 @@ func (h *GameHandler) GetTemplate(c *gin.Context) {
 	c.JSON(http.StatusOK, template)
 }
 
-// DownloadBundle serves the game bundle ZIP file
+// DownloadBundle serves the game bundle ZIP file, creating the bundle on-demand if missing
 func (h *GameHandler) DownloadBundle(c *gin.Context) {
 	gameID := c.Param("game_id")
 
@@ -187,7 +197,15 @@ func (h *GameHandler) DownloadBundle(c *gin.Context) {
 		return
 	}
 
-	bundlePath := h.gameService.GetBundlePath(gameID)
-	
+	bundlePath, err := h.gameService.EnsureBundle(gameID)
+	if err != nil {
+		if err.Error() == "game not found" || err.Error() == "invalid game ID" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.FileAttachment(bundlePath, fmt.Sprintf("game-%s.zip", gameID))
 }

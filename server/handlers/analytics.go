@@ -37,7 +37,7 @@ func (h *AnalyticsHandler) GetGameStats(c *gin.Context) {
 
 // GetRoomAnalytics returns analytics for all games in a room
 func (h *AnalyticsHandler) GetRoomAnalytics(c *gin.Context) {
-	roomID := c.Param("room_id")
+	roomID := c.Param("id")
 
 	analytics, err := h.analyticsService.GetRoomGameAnalytics(roomID)
 	if err != nil {
@@ -50,7 +50,7 @@ func (h *AnalyticsHandler) GetRoomAnalytics(c *gin.Context) {
 
 // ExportCSV exports game analytics as CSV
 func (h *AnalyticsHandler) ExportCSV(c *gin.Context) {
-	roomID := c.Param("room_id")
+	roomID := c.Param("id")
 
 	analytics, err := h.analyticsService.GetRoomGameAnalytics(roomID)
 	if err != nil {

@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"io"
+	"net/http"
 )
 
 // GameService handles game-related API calls
@@ -97,19 +98,26 @@ func (s *GameService) GetGame(gameID string) (interface{}, error) {
 func (s *GameService) DownloadBundle(gameID string) ([]byte, error) {
 	path := fmt.Sprintf("/games/%s/bundle", gameID)
 	fullURL := s.client.baseURL + path
-	
-	// Create HTTP request manually for file download
-	req, err := s.client.httpClient.Get(fullURL)
+
+	req, err := http.NewRequest(http.MethodGet, fullURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer req.Body.Close()
-
-	if req.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to download bundle: status %d", req.StatusCode)
+	if s.client.authToken != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.client.authToken))
 	}
 
-	return io.ReadAll(req.Body)
+	resp, err := s.client.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to download bundle: status %d", resp.StatusCode)
+	}
+
+	return io.ReadAll(resp.Body)
 }
 
 // PlayGameRequest represents a play game request
