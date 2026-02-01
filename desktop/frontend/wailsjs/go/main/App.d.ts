@@ -40,11 +40,17 @@ export function DeleteResource(arg1:string):Promise<void>;
 
 export function DeleteScheduleBlock(arg1:string,arg2:string):Promise<void>;
 
+export function DownloadGameBundle(arg1:string):Promise<string>;
+
 export function ExplainTopic(arg1:string,arg2:string,arg3:string):Promise<any>;
+
+export function ExportAnalyticsCSV(arg1:string):Promise<void>;
 
 export function GenerateAssessmentQuestions(arg1:string,arg2:string,arg3:number):Promise<any>;
 
 export function GenerateDailyGoals():Promise<any>;
+
+export function GenerateGame(arg1:string,arg2:string,arg3:string,arg4:string,arg5:number):Promise<any>;
 
 export function GenerateReport(arg1:string):Promise<any>;
 
@@ -69,6 +75,16 @@ export function GetCurrentUser():Promise<any>;
 export function GetDashboardStats():Promise<backend.DashboardStats>;
 
 export function GetFriends():Promise<any>;
+
+export function GetGame(arg1:string):Promise<any>;
+
+export function GetGameResults(arg1:string):Promise<any>;
+
+export function GetGameStats(arg1:string):Promise<any>;
+
+export function GetGameTemplate(arg1:string):Promise<any>;
+
+export function GetGameTemplates():Promise<any>;
 
 export function GetGoals(arg1:any,arg2:any):Promise<any>;
 
@@ -99,6 +115,10 @@ export function GetResources(arg1:string,arg2:string,arg3:string):Promise<any>;
 export function GetRoom(arg1:string):Promise<any>;
 
 export function GetRoomAIStatus(arg1:string):Promise<Record<string, any>>;
+
+export function GetRoomAnalytics(arg1:string):Promise<any>;
+
+export function GetRoomGames(arg1:string):Promise<any>;
 
 export function GetRoomMembers(arg1:string):Promise<any>;
 
@@ -131,6 +151,8 @@ export function Logout():Promise<void>;
 export function OpenFileDialog():Promise<string>;
 
 export function PauseStudySession():Promise<void>;
+
+export function PlayGame(arg1:string,arg2:Array<string>,arg3:number):Promise<any>;
 
 export function RejectFriendRequest(arg1:string):Promise<void>;
 

@@ -25,11 +25,12 @@ func NewWailsApp() *WailsApp {
 // Startup is called when the app starts
 func (a *WailsApp) Startup(ctx context.Context) {
 	a.ctx = ctx
+	startGameServer()
 }
 
 // Shutdown is called when the app shuts down
 func (a *WailsApp) Shutdown(ctx context.Context) {
-	// Cleanup
+	stopGameServer()
 }
 
 // EmitEvent emits an event to the frontend

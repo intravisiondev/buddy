@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"buddy-server/services"
@@ -10,22 +11,24 @@ import (
 
 // GameHandler handles game-related endpoints
 type GameHandler struct {
-	gameService *services.GameService
+	gameService     *services.GameService
+	templateService *services.GameTemplateService
 }
 
 // NewGameHandler creates a new game handler
-func NewGameHandler(gameService *services.GameService) *GameHandler {
+func NewGameHandler(gameService *services.GameService, templateService *services.GameTemplateService) *GameHandler {
 	return &GameHandler{
-		gameService: gameService,
+		gameService:     gameService,
+		templateService: templateService,
 	}
 }
 
 // GenerateGameRequest represents a game generation request
 type GenerateGameRequest struct {
-	GameType      string `json:"game_type" binding:"required,oneof=quiz flashcards fill_blank matching"`
+	GameType      string `json:"game_type" binding:"required,oneof=quiz flashcards fill_blank fill-blank matching"`
 	Subject       string `json:"subject" binding:"required"`
 	Difficulty    string `json:"difficulty" binding:"required,oneof=easy medium hard"`
-	QuestionCount int    `json:"question_count" binding:"required,min=3,max=20"`
+	QuestionCount int    `json:"question_count" binding:"min=3,max=20"` // 0 = use default 10
 }
 
 // GenerateGame generates a new AI-powered game
@@ -44,13 +47,23 @@ func (h *GameHandler) GenerateGame(c *gin.Context) {
 		return
 	}
 
+	questionCount := req.QuestionCount
+	if questionCount < 3 || questionCount > 20 {
+		questionCount = 10
+	}
+
+	gameType := req.GameType
+	if gameType == "fill-blank" {
+		gameType = "fill_blank"
+	}
+
 	game, err := h.gameService.GenerateGame(
 		roomID,
 		userID.(string),
-		req.GameType,
+		gameType,
 		req.Subject,
 		req.Difficulty,
-		req.QuestionCount,
+		questionCount,
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -144,4 +157,55 @@ func (h *GameHandler) GetGameResults(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, results)
+}
+
+// GetTemplates returns all available game templates
+func (h *GameHandler) GetTemplates(c *gin.Context) {
+	if h.templateService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Template service not available"})
+		return
+	}
+
+	templates := h.templateService.GetTemplates()
+	c.JSON(http.StatusOK, templates)
+}
+
+// GetTemplate returns a specific template
+func (h *GameHandler) GetTemplate(c *gin.Context) {
+	templateID := c.Param("template_id")
+
+	if h.templateService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Template service not available"})
+		return
+	}
+
+	template, err := h.templateService.GetTemplate(templateID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, template)
+}
+
+// DownloadBundle serves the game bundle ZIP file, creating the bundle on-demand if missing
+func (h *GameHandler) DownloadBundle(c *gin.Context) {
+	gameID := c.Param("game_id")
+
+	if h.gameService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Game service not available"})
+		return
+	}
+
+	bundlePath, err := h.gameService.EnsureBundle(gameID)
+	if err != nil {
+		if err.Error() == "game not found" || err.Error() == "invalid game ID" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "game not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.FileAttachment(bundlePath, fmt.Sprintf("game-%s.zip", gameID))
 }

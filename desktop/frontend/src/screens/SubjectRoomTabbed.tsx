@@ -8,8 +8,7 @@ import RoomProfile from '../components/RoomProfile';
 import SubjectRoomChat from '../components/SubjectRoomChat';
 import ResourcesTab from '../components/ResourcesTab';
 import AICoachTab from '../components/AICoachTab';
-// Import placeholder components
-// import GamesTab from '../components/GamesTab';
+import GamesTab from '../components/games/GamesTab';
 
 type TabType = 'profile' | 'chat' | 'resources' | 'games' | 'ai-coach';
 
@@ -182,15 +181,7 @@ export default function SubjectRoomTabbed() {
         )}
 
         {activeTab === 'games' && isMember && (
-          <div className="p-8 text-center">
-            <Gamepad2 className="w-16 h-16 text-light-text-secondary dark:text-dark-text-secondary mx-auto mb-4 opacity-50" />
-            <h3 className="text-xl font-semibold text-light-text-primary dark:text-dark-text-primary mb-2">
-              Games Coming Soon
-            </h3>
-            <p className="text-light-text-secondary dark:text-dark-text-secondary">
-              Quiz, flashcards and more educational games will be available here
-            </p>
-          </div>
+          <GamesTab roomID={selectedRoom} isTeacher={user?.role === 'teacher'} />
         )}
 
         {activeTab === 'ai-coach' && isMember && (

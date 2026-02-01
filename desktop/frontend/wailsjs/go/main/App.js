@@ -78,8 +78,16 @@ export function DeleteScheduleBlock(arg1, arg2) {
   return window['go']['main']['App']['DeleteScheduleBlock'](arg1, arg2);
 }
 
+export function DownloadGameBundle(arg1) {
+  return window['go']['main']['App']['DownloadGameBundle'](arg1);
+}
+
 export function ExplainTopic(arg1, arg2, arg3) {
   return window['go']['main']['App']['ExplainTopic'](arg1, arg2, arg3);
+}
+
+export function ExportAnalyticsCSV(arg1) {
+  return window['go']['main']['App']['ExportAnalyticsCSV'](arg1);
 }
 
 export function GenerateAssessmentQuestions(arg1, arg2, arg3) {
@@ -88,6 +96,10 @@ export function GenerateAssessmentQuestions(arg1, arg2, arg3) {
 
 export function GenerateDailyGoals() {
   return window['go']['main']['App']['GenerateDailyGoals']();
+}
+
+export function GenerateGame(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['GenerateGame'](arg1, arg2, arg3, arg4, arg5);
 }
 
 export function GenerateReport(arg1) {
@@ -136,6 +148,26 @@ export function GetDashboardStats() {
 
 export function GetFriends() {
   return window['go']['main']['App']['GetFriends']();
+}
+
+export function GetGame(arg1) {
+  return window['go']['main']['App']['GetGame'](arg1);
+}
+
+export function GetGameResults(arg1) {
+  return window['go']['main']['App']['GetGameResults'](arg1);
+}
+
+export function GetGameStats(arg1) {
+  return window['go']['main']['App']['GetGameStats'](arg1);
+}
+
+export function GetGameTemplate(arg1) {
+  return window['go']['main']['App']['GetGameTemplate'](arg1);
+}
+
+export function GetGameTemplates() {
+  return window['go']['main']['App']['GetGameTemplates']();
 }
 
 export function GetGoals(arg1, arg2) {
@@ -196,6 +228,14 @@ export function GetRoom(arg1) {
 
 export function GetRoomAIStatus(arg1) {
   return window['go']['main']['App']['GetRoomAIStatus'](arg1);
+}
+
+export function GetRoomAnalytics(arg1) {
+  return window['go']['main']['App']['GetRoomAnalytics'](arg1);
+}
+
+export function GetRoomGames(arg1) {
+  return window['go']['main']['App']['GetRoomGames'](arg1);
 }
 
 export function GetRoomMembers(arg1) {
@@ -260,6 +300,10 @@ export function OpenFileDialog() {
 
 export function PauseStudySession() {
   return window['go']['main']['App']['PauseStudySession']();
+}
+
+export function PlayGame(arg1, arg2, arg3) {
+  return window['go']['main']['App']['PlayGame'](arg1, arg2, arg3);
 }
 
 export function RejectFriendRequest(arg1) {
