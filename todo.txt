@@ -35,9 +35,16 @@ AI Kullanım Önerileri
 
 - Öğrenci ya da veli günlük, haftalık ya da aylık rapor olabilecektir. Öğrencinin tüm çalışma verileri AI model'e yüklenir ve critical thinking ile (belirli bir formatta) rapor üretmesi beklenir. -
 
-- Öğretmen AI ile oyun oluşturma 
+- Öğretmen AI ile oyun oluşturma  +
 
 
 Hatalar ve Eksikler:
 Leaderboard tablo yanlış gösteriyor. Yeni veriler gösterilmiyor +
 Milestones ilerlemeler olmuyor. +
+
+
+Web frontend kur - aynı desktop gibi olsun
+Desktop uygulamasını build, sign, notarize et - macos için
+Web uygulamasından desktop indirebilme
+AWS ec2 deploy et
+neurobytes'a subdomain ekle ve aws ec2'ye Bağla

@@ -4,6 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import logoImage from '../images/icon.png';
 
 type OnboardingStep = 'role' | 'auth';
 type AuthMode = 'login' | 'signup';
@@ -118,8 +119,8 @@ export default function Onboarding() {
 
         <div className="max-w-4xl w-full relative z-10 animate-slide-up">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-primary rounded-card mb-6 shadow-glow animate-pulse-slow">
-              <BookOpen className="w-12 h-12 text-white" />
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-card mb-6 shadow-glow animate-pulse-slow overflow-hidden">
+              <img src={logoImage} alt="Buddy Logo" className="w-full h-full object-cover" />
             </div>
             <h1 className="text-5xl font-bold text-light-text-primary dark:text-dark-text-primary mb-4 bg-gradient-primary bg-clip-text text-transparent">
               Welcome to Buddy
@@ -176,7 +177,6 @@ export default function Onboarding() {
 
   // Auth Step
   const selectedRoleData = roles.find(r => r.id === selectedRole);
-  const RoleIcon = selectedRoleData?.icon || BookOpen;
 
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg flex items-center justify-center p-8 relative overflow-hidden">
@@ -187,8 +187,8 @@ export default function Onboarding() {
       <div className="max-w-md w-full relative z-10 animate-slide-up">
         <Card className="p-8">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-card mb-4 shadow-soft">
-              <RoleIcon className="w-8 h-8 text-white" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-card mb-4 shadow-soft overflow-hidden">
+              <img src={logoImage} alt="Buddy Logo" className="w-full h-full object-cover" />
             </div>
             <h2 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-2">
               {authMode === 'login' ? 'Welcome Back!' : 'Create Account'}
