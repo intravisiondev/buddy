@@ -12,13 +12,12 @@ export interface SyllabusItem {
 }
 
 export const aiService = {
-  async chat(prompt: string, context?: string, history?: ChatMessage[]): Promise<string> {
+  async chat(message: string, context?: string): Promise<{ response: string }> {
     const response = await api.post<{ response: string }>('/api/ai/chat', {
-      prompt,
+      message,
       context,
-      history,
     });
-    return response.response;
+    return response;
   },
 
   async explainTopic(topic: string, level?: string): Promise<string> {
@@ -69,8 +68,8 @@ export const aiService = {
     return response;
   },
 
-  async generateAssessmentQuestions(subject: string, notes: string, durationMinutes: number): Promise<any> {
-    const response = await api.post('/api/ai/assessment/questions', {
+  async generateAssessmentQuestions(subject: string, notes: string, durationMinutes: number): Promise<{ questions: any[] }> {
+    const response = await api.post<{ questions: any[] }>('/api/study-session/assess', {
       subject,
       notes,
       duration_minutes: durationMinutes,
@@ -83,11 +82,11 @@ export const aiService = {
     await api.post(`/api/rooms/${roomId}/ai/train`, { resource_ids: resourceIds });
   },
 
-  async chatWithRoomAI(roomId: string, message: string): Promise<string> {
+  async chatWithRoomAI(roomId: string, message: string): Promise<{ response: string }> {
     const response = await api.post<{ response: string }>(`/api/rooms/${roomId}/ai/chat`, {
       message,
     });
-    return response.response;
+    return response;
   },
 
   async getRoomAIStatus(roomId: string): Promise<{ trained: boolean; last_trained?: string; resource_count?: number; message_count?: number }> {
