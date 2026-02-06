@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"log"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,9 +25,15 @@ func Connect(uri string) *DB {
 	// Client options: longer timeouts and explicit TLS for Atlas (avoids "tls: internal error")
 	clientOptions := options.Client().ApplyURI(uri).
 		SetServerSelectionTimeout(25 * time.Second).
-		SetConnectTimeout(15 * time.Second).
-		SetTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12})
+		SetConnectTimeout(15 * time.Second)
 
+	// ✅ TLS sadece Atlas / SRV connection için
+	// - mongodb+srv:// genelde Atlas
+	// - ya da uri içinde .mongodb.net geçiyorsa Atlas
+	isAtlas := strings.HasPrefix(uri, "mongodb+srv://") || strings.Contains(uri, "mongodb.net")
+	if isAtlas {
+		clientOptions.SetTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12})
+	}
 	// Connect to MongoDB
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
