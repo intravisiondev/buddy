@@ -1,0 +1,31 @@
+export { default as api } from './api';
+export { default as authService } from './auth.service';
+export { default as roomService } from './room.service';
+export { default as userService } from './user.service';
+export { default as studyPlanService } from './studyplan.service';
+export { default as goalService } from './goal.service';
+export { default as activityService } from './activity.service';
+export { default as leaderboardService } from './leaderboard.service';
+export { default as friendService } from './friend.service';
+export { default as resourceService } from './resource.service';
+export { default as assignmentService } from './assignment.service';
+export { default as aiService } from './ai.service';
+export { default as gameService } from './game.service';
+export { default as reportService } from './report.service';
+export { default as smartPlanService } from './smartplan.service';
+
+// Re-export types
+export type { User, AuthResponse } from './auth.service';
+export type { Room, Message, RoomMember } from './room.service';
+export type { UserProfile, UserStats, DashboardStats } from './user.service';
+export type { StudyPlan, Course, ScheduleBlock } from './studyplan.service';
+export type { Goal, Milestone } from './goal.service';
+export type { StudySession, Activity } from './activity.service';
+export type { LeaderboardEntry, Badge } from './leaderboard.service';
+export type { Friend, FriendRequest } from './friend.service';
+export type { Resource } from './resource.service';
+export type { Assignment } from './assignment.service';
+export type { ChatMessage, SyllabusItem } from './ai.service';
+export type { GameTemplate, Game, GameResult } from './game.service';
+export type { Report } from './report.service';
+export type { SmartPlanInput, SmartPlanSuggestion } from './smartplan.service';
