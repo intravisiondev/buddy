@@ -3,6 +3,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Avatar from '../ui/Avatar';
 import { useAuth } from '../../contexts/AuthContext';
+import logoImage from '../../images/icon.png';
 
 export default function Sidebar() {
   const { currentScreen, setCurrentScreen, userRole, setSelectedRoom } = useApp();
@@ -44,8 +45,8 @@ export default function Sidebar() {
 
       <div className="relative z-10 p-6 border-b border-light-text-secondary/10 dark:border-dark-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-primary rounded-button flex items-center justify-center shadow-glow animate-pulse-slow">
-            <BookOpen className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 rounded-button overflow-hidden shadow-glow">
+            <img src={logoImage} alt="Buddy Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">Buddy</h2>
