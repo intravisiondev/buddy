@@ -1,4 +1,4 @@
-import { Home, BookOpen, Trophy, Calendar, Users, Moon, Sun, Settings } from 'lucide-react';
+import { Home, BookOpen, Trophy, Calendar, Users, Moon, Sun, Settings, Download } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Avatar from '../ui/Avatar';
@@ -15,18 +15,21 @@ export default function Sidebar() {
     { id: 'room', icon: BookOpen, label: 'Study Rooms' },
     { id: 'study-plan', icon: Calendar, label: 'Study Plans' },
     { id: 'leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { id: 'download', icon: Download, label: 'Download' },
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
   const parentNavItems = [
     { id: 'parent-dashboard', icon: Home, label: 'Dashboard' },
     { id: 'leaderboard', icon: Trophy, label: 'Progress' },
+    { id: 'download', icon: Download, label: 'Download' },
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
   const teacherNavItems = [
     { id: 'teacher-dashboard', icon: Home, label: 'Dashboard' },
     { id: 'room', icon: Users, label: 'Classrooms' },
+    { id: 'download', icon: Download, label: 'Download' },
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 

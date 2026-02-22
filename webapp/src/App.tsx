@@ -14,6 +14,7 @@ import Settings from './screens/Settings';
 import Leaderboard from './screens/Leaderboard';
 import ParentDashboard from './screens/ParentDashboard';
 import TeacherDashboard from './screens/TeacherDashboard';
+import Download from './screens/Download';
 
 function AppContent() {
   const { currentScreen, userRole, selectedRoom, selectedStudyPlan, setCurrentScreen, setUserRole } = useApp();
@@ -77,6 +78,8 @@ function AppContent() {
         return <TeacherDashboard />;
       case 'settings':
         return <Settings />;
+      case 'download':
+        return <Download />;
       default:
         return <StudentDashboard />;
     }

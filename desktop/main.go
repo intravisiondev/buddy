@@ -19,7 +19,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:     "Buddy - AI-Powered Learning & Focus Assistant",
+		Title:     "Buddy - AI-Powered Learning and Focus Assistant",
 		Width:     1280,
 		Height:    800,
 		MinWidth:  1024,
@@ -47,7 +47,7 @@ func main() {
 			WindowIsTranslucent:  true,
 			About: &mac.AboutInfo{
 				Title:   "Buddy",
-				Message: "AI-Powered Learning & Focus Assistant for Students",
+				Message: "AI-Powered Learning and Focus Assistant for Students",
 			},
 		},
 	})

@@ -17,7 +17,7 @@
     "productName": "Buddy",
     "productVersion": "0.0.1",
     "copyright": "Copyright © 2024, Buddy Team",
-    "comments": "AI-Powered Learning & Focus Assistant for Students"
+    "comments": "AI-Powered Learning and Focus Assistant for Students"
   },
   "nsisType": "multiple",
   "obfuscated": false,

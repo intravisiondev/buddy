@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"buddy-server/config"
 	"buddy-server/database"
@@ -113,6 +114,17 @@ func main() {
 
 		// Public study plans (challenges)
 		api.GET("/studyplans/public", studyPlanHandler.GetPublicStudyPlans)
+
+		// Desktop app download (serves server/Buddy.dmg.zip if present)
+		api.GET("/download/desktop", func(c *gin.Context) {
+			const filename = "Buddy.dmg.zip"
+			path := "./" + filename
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				c.JSON(404, gin.H{"error": "Desktop build not available"})
+				return
+			}
+			c.FileAttachment(path, filename)
+		})
 	}
 
 	// Protected routes

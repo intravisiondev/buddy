@@ -1,4 +1,7 @@
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import Constants from 'expo-constants';
+import { storage } from '../utils/storage';
+
+const API_BASE = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
 
 class ApiError extends Error {
   status: number;
@@ -11,20 +14,20 @@ class ApiError extends Error {
 }
 
 export const api = {
-  getToken(): string | null {
-    return localStorage.getItem('token');
+  async getToken(): Promise<string | null> {
+    return await storage.getToken();
   },
 
-  setToken(token: string): void {
-    localStorage.setItem('token', token);
+  async setToken(token: string): Promise<void> {
+    await storage.setToken(token);
   },
 
-  clearToken(): void {
-    localStorage.removeItem('token');
+  async clearToken(): Promise<void> {
+    await storage.removeToken();
   },
 
   async request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = this.getToken();
+    const token = await this.getToken();
     
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -56,31 +59,31 @@ export const api = {
     return JSON.parse(text);
   },
 
-  get<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
+  async get<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET', ...options });
   },
 
-  post<T = any>(endpoint: string, data?: any): Promise<T> {
+  async post<T = any>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     });
   },
 
-  put<T = any>(endpoint: string, data?: any): Promise<T> {
+  async put<T = any>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
     });
   },
 
-  delete<T = any>(endpoint: string): Promise<T> {
+  async delete<T = any>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   },
 
   // File upload with multipart/form-data
   async upload<T = any>(endpoint: string, formData: FormData): Promise<T> {
-    const token = this.getToken();
+    const token = await this.getToken();
     
     const headers: HeadersInit = {
       ...(token && { Authorization: `Bearer ${token}` }),

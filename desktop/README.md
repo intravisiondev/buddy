@@ -72,6 +72,39 @@ wails build
 
 Output binaries are in `build/bin/`.
 
+### macOS: Build, sign & notarize
+
+To distribute outside the Mac App Store, the app must be signed with a **Developer ID Application** certificate and **notarized** by Apple. Use the provided script with your App Store Connect API key and signing identity.
+
+1. **Prerequisites**
+   - Apple Developer account with **Developer ID Application** certificate (in Keychain).
+   - App Store Connect **API Key** (.p8 file): [Users and Access → Keys](https://appstoreconnect.apple.com/access/integrations/api-keys) → create key with “Developer” role, download the `.p8` once.
+
+2. **Configure env** (do not commit secrets):
+
+   ```bash
+   cp .env.signing.example .env.signing
+   # Edit .env.signing:
+   # - APPLE_API_KEY_PATH = full path to your AuthKey_*.p8
+   # - SIGN_IDENTITY = "Developer ID Application: Your Name (TEAM_ID)"
+   # APPLE_ISSUER_ID and APPLE_KEY_ID are pre-filled; override if needed.
+   ```
+
+   Find your signing identity:
+
+   ```bash
+   security find-identity -v -p codesigning
+   ```
+
+3. **Run build + sign + notarize**
+
+   ```bash
+   source .env.signing
+   ./build-mac-sign-notarize.sh
+   ```
+
+   The script will: build (darwin/universal) → sign with Developer ID → submit to Apple for notarization → staple the ticket. Result: `build/bin/Buddy.app` ready to distribute (or to put inside a DMG).
+
 ## Configuration
 
 | Variable | Description |

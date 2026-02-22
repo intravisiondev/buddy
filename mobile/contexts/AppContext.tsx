@@ -1,22 +1,31 @@
-import { createContext, useContext, useState } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 
-type UserRole = 'student' | 'parent' | 'teacher' | null;
-type Screen = 'onboarding' | 'dashboard' | 'room' | 'subject-room' | 'study-plan' | 'leaderboard' | 'parent-dashboard' | 'teacher-dashboard' | 'settings' | 'download';
+type Screen = 
+  | 'dashboard' 
+  | 'rooms' 
+  | 'room-list' 
+  | 'subject-room' 
+  | 'study-plans' 
+  | 'study-plan-detail'
+  | 'study-plan-builder'
+  | 'leaderboard' 
+  | 'settings'
+  | 'teacher-dashboard'
+  | 'parent-dashboard';
 
-type StudyPlanTab = 'dashboard' | 'plans' | 'schedule' | 'milestones';
+type StudyPlanTab = 'dashboard' | 'plans' | 'schedule' | 'milestones' | 'reports';
 
 interface AppContextType {
-  userRole: UserRole;
-  setUserRole: (role: UserRole) => void;
+  userRole: 'student' | 'parent' | 'teacher' | null;
+  setUserRole: (role: 'student' | 'parent' | 'teacher' | null) => void;
   currentScreen: Screen;
   setCurrentScreen: (screen: Screen) => void;
   selectedRoom: string | null;
-  setSelectedRoom: (room: string | null) => void;
+  setSelectedRoom: (roomId: string | null) => void;
   selectedStudyPlan: string | null;
   setSelectedStudyPlan: (planId: string | null) => void;
-  studyPlanTab: StudyPlanTab | null;
-  setStudyPlanTab: (tab: StudyPlanTab | null) => void;
+  studyPlanTab: StudyPlanTab;
+  setStudyPlanTab: (tab: StudyPlanTab) => void;
   showAIPanel: boolean;
   setShowAIPanel: (show: boolean) => void;
 }
@@ -24,11 +33,11 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [userRole, setUserRole] = useState<UserRole>(null);
-  const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding');
+  const [userRole, setUserRole] = useState<'student' | 'parent' | 'teacher' | null>(null);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [selectedStudyPlan, setSelectedStudyPlan] = useState<string | null>(null);
-  const [studyPlanTab, setStudyPlanTab] = useState<StudyPlanTab | null>(null);
+  const [studyPlanTab, setStudyPlanTab] = useState<StudyPlanTab>('dashboard');
   const [showAIPanel, setShowAIPanel] = useState(false);
 
   return (

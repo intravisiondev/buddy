@@ -41,6 +41,14 @@ ALLOWED_ORIGINS=http://localhost:34115,http://localhost:5173
 docker run -d -p 27017:27017 --name buddy-mongo mongo:latest
 ```
 
+## Desktop app download
+
+To offer the macOS desktop app from the webapp, place the built artifact in the server directory:
+
+- Copy `Buddy.dmg.zip` (from `desktop/` after running `build-mac-sign-notarize.sh`) to `server/Buddy.dmg.zip`.
+
+The API serves it at `GET /api/download/desktop` (no auth). If the file is missing, the route returns 404.
+
 ## Running
 
 Development:
